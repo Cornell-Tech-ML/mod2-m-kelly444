@@ -10,9 +10,32 @@ from minitorch import MathTest, MathTestVariable
 from typing import List, Tuple, Union, Any, Callable
 
 MyModule = None
+from typing import Any, Dict, TypeVar, Union
+import networkx as nx
+
+
+class TypedMultiDiGraph(nx.MultiDiGraph):
+    graph: Dict[str, Any]
+
+
+def set_graph_attr(
+    G: Union[nx.MultiDiGraph, TypedMultiDiGraph], attr: Dict[str, Any]
+) -> TypedMultiDiGraph:
+    """Helper function to set graph attributes with proper typing"""
+    if not hasattr(G, "graph"):
+        G.graph = {}
+    G.graph.update(attr)
+    return G  # type: ignore
 
 
 def render_math_sandbox(use_scalar: bool = False, use_tensor: bool = False) -> None:
+    out = None  # Initialize out at the start
+
+    if out is not None:
+        G = graph_builder.GraphBuilder().run(out)
+        set_graph_attr(G, {"rankdir": "LR"})
+        st.graphviz_chart(nx.nx_pydot.to_pydot(G).to_string())
+
     st.write("## Sandbox for Math Functions")
     st.write("Visualization of the mathematical tests run on the underlying code.")
 

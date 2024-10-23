@@ -4,9 +4,28 @@ from streamlit_ace import st_ace
 import minitorch
 
 MyModule = None
+from typing import Any, Dict, TypeVar, Union
+import networkx as nx
+
+
+class TypedMultiDiGraph(nx.MultiDiGraph):
+    graph: Dict[str, Any]
+
+
+def set_graph_attr(
+    G: Union[nx.MultiDiGraph, TypedMultiDiGraph], attr: Dict[str, Any]
+) -> TypedMultiDiGraph:
+    """Helper function to set graph attributes with proper typing"""
+    if not hasattr(G, "graph"):
+        G.graph = {}
+    G.graph.update(attr)
+    return G  # type: ignore
 
 
 def render_module_sandbox():
+    G = TypedMultiDiGraph()
+    set_graph_attr(G, {"rankdir": "TB"})
+    st.graphviz_chart(nx.nx_pydot.to_pydot(G).to_string())
     st.write("## Sandbox for Module Trees")
 
     st.write(
