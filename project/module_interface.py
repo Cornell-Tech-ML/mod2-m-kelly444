@@ -17,10 +17,12 @@ def set_graph_attr(
     G: Union[nx.MultiDiGraph, TypedMultiDiGraph], attr: Dict[str, Any]
 ) -> TypedMultiDiGraph:
     """Helper function to set graph attributes with proper typing"""
-    if not hasattr(G, "graph"):
-        G.graph = {}
-    G.graph.update(attr)
-    return cast(TypedMultiDiGraph, G)
+    # Cast to TypedMultiDiGraph at the start
+    typed_G = cast(TypedMultiDiGraph, G)
+    if not hasattr(typed_G, "graph"):
+        typed_G.graph = {}
+    typed_G.graph.update(attr)
+    return typed_G
 
 
 def render_module_sandbox():
