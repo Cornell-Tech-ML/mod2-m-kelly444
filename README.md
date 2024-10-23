@@ -31,4 +31,4 @@ Module 2 Tensor
 <img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/fb58f9d90d4ac080283e7cd463ba18e3736688fa/Screen%20Shot%202024-10-23%20at%209.13.07%20AM.png" width="100%">
 
 Training Simple Dataset
-<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/be8d8d4a390c3ddd4203802e872f291d4a1a7397/Screen%20Shot%202024-10-23%20at%209.32.46%20AM.png width="100%">
+<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/be8d8d4a390c3ddd4203802e872f291d4a1a7397/Screen%20Shot%202024-10-23%20at%209.32.46%20AM.png" width="100%">
