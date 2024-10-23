@@ -35,11 +35,16 @@ jobs:
 
           # Check if packages are installed
           if [ ! -d ".venv/lib/python3.12/site-packages" ] || [ -z "$(ls -A .venv/lib/python3.12/site-packages)" ]; then
-            python -m pip install -r requirements.txt
-            python -m pip install -r requirements.extra.txt
-            python -m pip install -Ue .
+            python -m pip install --no-cache-dir -r requirements.txt
+            python -m pip install --no-cache-dir -r requirements.extra.txt
+            python -m pip install --no-cache-dir -Ue .
           else
             echo "Dependencies already installed, skipping installation."
           fi
+
+      # Clean up unused files (if necessary)
+      - name: Clean up
+        run: |
+          rm -rf ~/.cache/pip
 
       - uses: education/autograding@v1
