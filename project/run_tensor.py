@@ -1,34 +1,53 @@
-"""
-Be sure you have minitorch installed in you Virtual Env.
->>> pip install -Ue .
-"""
-
 import minitorch
+from typing import Callable, List, Any
+
 
 # Use this function to make a random parameter in
 # your module.
-def RParam(*shape):
+def RParam(*shape: int) -> minitorch.Parameter:
     r = 2 * (minitorch.rand(shape) - 0.5)
     return minitorch.Parameter(r)
 
-# TODO: Implement for Task 2.5.
 
-def default_log_fn(epoch, total_loss, correct, losses):
-    print("Epoch ", epoch, " loss ", total_loss, "correct", correct)
+def default_log_fn(
+    epoch: int, total_loss: float, correct: int, losses: List[float]
+) -> None:
+    print("Epoch ", epoch, " loss ", total_loss, " correct ", correct)
+
+
+class Network:
+    def __init__(self, hidden_layers: int):
+        self.layers = []
+        input_size = 2  # Adjust according to your input size
+        for _ in range(hidden_layers):
+            self.layers.append(minitorch.Linear(input_size, input_size))
+            # Adjust input size if you want different sizes for layers
+        self.layers.append(minitorch.Linear(input_size, 1))  # Output layer
+
+    def forward(self, x: Any) -> Any:
+        for layer in self.layers:
+            x = layer(x).relu()
+        return x
 
 
 class TensorTrain:
-    def __init__(self, hidden_layers):
+    def __init__(self, hidden_layers: int) -> None:
         self.hidden_layers = hidden_layers
         self.model = Network(hidden_layers)
 
-    def run_one(self, x):
+    def run_one(self, x: Any) -> Any:
         return self.model.forward(minitorch.tensor([x]))
 
-    def run_many(self, X):
+    def run_many(self, X: List[Any]) -> Any:
         return self.model.forward(minitorch.tensor(X))
 
-    def train(self, data, learning_rate, max_epochs=500, log_fn=default_log_fn):
+    def train(
+        self,
+        data: Any,
+        learning_rate: float,
+        max_epochs: int = 500,
+        log_fn: Callable[[int, float, int, List[float]], None] = default_log_fn,
+    ) -> None:
         self.learning_rate = learning_rate
         self.max_epochs = max_epochs
         self.model = Network(self.hidden_layers)
@@ -37,7 +56,7 @@ class TensorTrain:
         X = minitorch.tensor(data.X)
         y = minitorch.tensor(data.y)
 
-        losses = []
+        losses: List[float] = []
         for epoch in range(1, self.max_epochs + 1):
             total_loss = 0.0
             correct = 0

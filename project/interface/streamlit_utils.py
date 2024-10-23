@@ -1,40 +1,39 @@
 import inspect
-
 import streamlit as st
+from typing import Callable, Optional, Any
 
-img_id_counter = 0
+img_id_counter: int = 0
 
 
-def get_image_id():
+def get_image_id() -> int:
     global img_id_counter
     img_id_counter += 1
     return img_id_counter
 
 
-def get_img_tag(src, width=None):
+def get_img_tag(src: str, width: Optional[int] = None) -> str:
     img_id = get_image_id()
     if width is not None:
-        style = """
-<style>.img-{} {{
+        style = f"""
+<style>.img-{img_id} {{
     float: left;
-    width: {}px;
+    width: {width}px;
 }}
 </style>
-        """.format(img_id, width)
+        """
     else:
         style = ""
-    return """
-        <img src="{}" class="img-{}" alt="img-{}" />
-        {}
-    """.format(src, img_id, img_id, style)
+    return f"""
+        <img src="{src}" class="img-{img_id}" alt="img-{img_id}" />
+        {style}
+    """
 
 
-def render_function(fn):
+def render_function(fn: Callable[..., Any]) -> None:
     st.markdown(
-        """
+        f"""
 ```python
-%s
+{inspect.getsource(fn)}
 
 ```"""
-        % inspect.getsource(fn)
     )
