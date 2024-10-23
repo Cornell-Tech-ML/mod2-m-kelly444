@@ -16,3 +16,4 @@ torch>=2.0.0
 torchvision
 transformers
 typing-extensions>=4.5.0
+pyright=1.1.386
