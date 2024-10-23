@@ -21,3 +21,5 @@ The files that will be synced are:
 <img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/0419664f3870523dbb9546bd41d86d9112346743/Screen%20Shot%202024-10-23%20at%209.17.38%20AM.png" width="100%">
 
 <img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/3331d880b7f99611fb590f51e716e572e1029422/Screen%20Shot%202024-10-23%20at%209.17.25%20AM.png" width="100%">
+
+<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/338268dfea2a1245fb83edacfc7bfd16578c9ec1/Screen%20Shot%202024-10-23%20at%209.16.12%20AM.png" width="100%">
