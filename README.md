@@ -26,3 +26,6 @@ Tensor Math Sandbox
 
 Autograd Sandbox
 <img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/338268dfea2a1245fb83edacfc7bfd16578c9ec1/Screen%20Shot%202024-10-23%20at%209.16.12%20AM.png" width="100%">
+
+Module 2 Tensor
+<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/fb58f9d90d4ac080283e7cd463ba18e3736688fa/Screen%20Shot%202024-10-23%20at%209.13.07%20AM.png" width="100%">
