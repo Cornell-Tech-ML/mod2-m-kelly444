@@ -1,6 +1,6 @@
 name: GitHub Classroom Workflow
 
-on: push
+on: [push]
 
 permissions:
   checks: write
@@ -13,17 +13,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Clean up cache
+
+      # Clean up pip cache
+      - name: Clean up pip cache
         run: rm -rf ~/.cache/pip
+      # Set up Python 3.12
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
-        with: python-version: '3.12'
+        with:
+          python-version: '3.12'
+
+      # Create and activate virtual environment
+      - name: Create virtual environment
+        run: python3 -m venv .venv
+
+      # Install dependencies
       - name: Install dependencies
         run: |
-          python3 -m venv .venv
           .venv/bin/activate
           export PYRIGHT_PYTHON_FORCE_VERSION=3.12
-          pip install -r requirements.txt
-          pip install -r requirements.extra.txt
-          pip install -Ue .
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements.extra.txt
+          python -m pip install -Ue .
+
       - uses: education/autograding@v1
