@@ -30,15 +30,10 @@ jobs:
       # Install dependencies
       - name: Install dependencies
         run: |
-          .venv/bin/activate
+          . .venv/bin/activate
           export PYRIGHT_PYTHON_FORCE_VERSION=3.12
           python -m pip install -r requirements.txt
           python -m pip install -r requirements.extra.txt
           python -m pip install -Ue .
 
       - uses: education/autograding@v1
-
-
-
-
-
