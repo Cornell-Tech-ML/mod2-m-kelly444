@@ -26,14 +26,12 @@ jobs:
 
       # Create and activate virtual environment
       - name: Create virtual environment
-        run: |
-          python3 -m venv .venv
-          echo ".venv/bin/activate" >> $GITHUB_ENV
+        run: python3 -m venv .venv
 
       # Install dependencies
       - name: Install dependencies
         run: |
-          source .venv/bin/activate
+          .venv/bin/activate
           python -m pip install -r requirements.txt
           python -m pip install -r requirements.extra.txt
           python -m pip install -Ue .
