@@ -14,14 +14,20 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      # Clean up pip cache
-      - name: Clean up pip cache
-        run: rm -rf ~/.cache/pip
       # Set up Python 3.12
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
+
+      # Cache dependencies
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv/lib/python3.12/site-packages
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'requirements.extra.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       # Create and activate virtual environment
       - name: Create virtual environment
@@ -37,3 +43,8 @@ jobs:
           python -m pip install -Ue .
 
       - uses: education/autograding@v1
+
+
+
+
+
