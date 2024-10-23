@@ -23,7 +23,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # Create and activate virtual environment
+      # Create virtual environment
       - name: Create virtual environment
         run: python3 -m venv .venv
 
@@ -32,8 +32,14 @@ jobs:
         run: |
           . .venv/bin/activate
           export PYRIGHT_PYTHON_FORCE_VERSION=3.12
-          python -m pip install -r requirements.txt
-          python -m pip install -r requirements.extra.txt
-          python -m pip install -Ue .
+
+          # Check if packages are installed
+          if [ ! -d ".venv/lib/python3.12/site-packages" ] || [ -z "$(ls -A .venv/lib/python3.12/site-packages)" ]; then
+            python -m pip install -r requirements.txt
+            python -m pip install -r requirements.extra.txt
+            python -m pip install -Ue .
+          else
+            echo "Dependencies already installed, skipping installation."
+          fi
 
       - uses: education/autograding@v1
