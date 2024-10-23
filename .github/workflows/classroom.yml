@@ -20,10 +20,6 @@ jobs:
         with:
           python-version: '3.12'
 
-      # Set environment variable for Pyright
-      - name: Set PYRIGHT_PYTHON_FORCE_VERSION
-        run: echo "PYRIGHT_PYTHON_FORCE_VERSION=latest" >> $GITHUB_ENV
-
       # Create and activate virtual environment
       - name: Create virtual environment
         run: python3 -m venv .venv
@@ -32,6 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           .venv/bin/activate
+          export PYRIGHT_PYTHON_FORCE_VERSION=3.12
           python -m pip install -r requirements.txt
           python -m pip install -r requirements.extra.txt
           python -m pip install -Ue .
