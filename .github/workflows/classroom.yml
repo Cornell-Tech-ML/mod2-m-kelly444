@@ -24,4 +24,18 @@ jobs:
       - name: Set PYRIGHT_PYTHON_FORCE_VERSION
         run: echo "PYRIGHT_PYTHON_FORCE_VERSION=latest" >> $GITHUB_ENV
 
+      # Create and activate virtual environment
+      - name: Create virtual environment
+        run: |
+          python3 -m venv .venv
+          echo ".venv/bin/activate" >> $GITHUB_ENV
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          source .venv/bin/activate
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements.extra.txt
+          python -m pip install -Ue .
+
       - uses: education/autograding@v1
