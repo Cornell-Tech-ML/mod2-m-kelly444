@@ -7,7 +7,7 @@ numpy == 2.0.0
 pandas>=1.5.3
 plotly>=5.13.0
 pre-commit == 2.20.0
-pyright=1.1.386
+pyright == 1.1.386
 pytest == 8.3.2
 pytest-env
 pytest-runner == 5.2
