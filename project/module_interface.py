@@ -2,6 +2,7 @@ import networkx as nx
 import streamlit as st
 from streamlit_ace import st_ace
 import minitorch
+from typing import cast
 
 MyModule = None
 from typing import Any, Dict, TypeVar, Union
@@ -19,7 +20,7 @@ def set_graph_attr(
     if not hasattr(G, "graph"):
         G.graph = {}
     G.graph.update(attr)
-    return G  # type: ignore
+    return cast(TypedMultiDiGraph, G)
 
 
 def render_module_sandbox():
@@ -51,7 +52,7 @@ class MyModule(minitorch.Module):
         out = MyModule()
         st.write(dict(out.named_parameters()))
 
-        G = nx.MultiDiGraph()
+        G = cast(TypedMultiDiGraph, nx.MultiDiGraph())
         G.add_node("base")
         stack = [(out, "base")]
 
@@ -71,7 +72,7 @@ class MyModule(minitorch.Module):
                 G.add_edge(name, name + "." + cname)
                 stack.append((m, name + "." + cname))
 
-        G.graph["graph"] = {"rankdir": "TB"}
+        set_graph_attr(G, {"rankdir": "TB"})
         st.graphviz_chart(nx.nx_pydot.to_pydot(G).to_string())
     else:
         st.error("MyModule is not defined. Please check your code.")

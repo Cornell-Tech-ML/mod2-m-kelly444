@@ -3,6 +3,7 @@ import networkx as nx
 import plotly.graph_objects as go
 import streamlit as st
 from project.interface.streamlit_utils import render_function
+from typing import cast
 
 import minitorch
 from minitorch.tensor import Tensor
@@ -25,14 +26,14 @@ def set_graph_attr(
     if not hasattr(G, "graph"):
         G.graph = {}
     G.graph.update(attr)
-    return G  # type: ignore
+    return cast(TypedMultiDiGraph, G)
 
 
 def render_math_sandbox(use_scalar: bool = False, use_tensor: bool = False) -> None:
     out = None  # Initialize out at the start
 
     if out is not None:
-        G = graph_builder.GraphBuilder().run(out)
+        G = cast(TypedMultiDiGraph, graph_builder.GraphBuilder().run(out))
         set_graph_attr(G, {"rankdir": "LR"})
         st.graphviz_chart(nx.nx_pydot.to_pydot(G).to_string())
 
@@ -118,8 +119,8 @@ def render_math_sandbox(use_scalar: bool = False, use_tensor: bool = False) -> N
             st.write(fig)
 
             if out is not None:
-                G = graph_builder.GraphBuilder().run(out)
-                G.graph["graph"] = {"rankdir": "LR"}
+                G = cast(TypedMultiDiGraph, graph_builder.GraphBuilder().run(out))
+                set_graph_attr(G, {"rankdir": "LR"})
                 st.graphviz_chart(nx.nx_pydot.to_pydot(G).to_string())
 
     if f_type == "Two Arg":
