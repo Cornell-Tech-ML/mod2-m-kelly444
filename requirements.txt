@@ -1,9 +1,19 @@
 colorama==0.4.3
-hypothesis == 6.54
+hypothesis>=6.75.3
+matplotlib
+networkx>=2.8.4
 numba == 0.60
 numpy == 2.0.0
+pandas>=1.5.3
+plotly>=5.13.0
 pre-commit == 2.20.0
+pyright
 pytest == 8.3.2
 pytest-env
 pytest-runner == 5.2
-typing_extensions
+streamlit>=1.22.0
+streamlit-ace>=0.1.1
+torch>=2.0.0
+torchvision
+transformers
+typing-extensions>=4.5.0

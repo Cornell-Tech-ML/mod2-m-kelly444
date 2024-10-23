@@ -15,7 +15,7 @@ class MathTest(Generic[A]):
 
     @staticmethod
     def addConstant(a: A) -> A:
-        "Add contant to the argument"
+        "Add constant to the argument"
         return 5 + a
 
     @staticmethod
@@ -79,8 +79,8 @@ class MathTest(Generic[A]):
 
     @staticmethod
     def mul2(a: A, b: A) -> A:
-        "Mul two arguments"
-        return a * b
+        "Multiply two arguments"
+        return a * b  #
 
     @staticmethod
     def div2(a: A, b: A) -> A:
@@ -139,7 +139,6 @@ class MathTest(Generic[A]):
         for k in dir(MathTest):
             if callable(getattr(MathTest, k)) and not k.startswith("_"):
                 base_fn = getattr(cls, k)
-                # scalar_fn = getattr(cls, k)
                 tup = (k, base_fn)
                 if k.endswith("2"):
                     two_arg.append(tup)
@@ -190,11 +189,11 @@ class MathTestVariable(MathTest):
 
     @staticmethod
     def mean_red(a):
-        return a.mean(0)
+        return a.mean(0)  # AttributeError: 'Tensor' object has no attribute 'mean'
 
     @staticmethod
     def mean_full_red(a):
-        return a.mean()
+        return a.mean()  # AttributeError: 'Tensor' object has no attribute 'mean'
 
     @staticmethod
     def eq2(a, b):
@@ -211,3 +210,23 @@ class MathTestVariable(MathTest):
     @staticmethod
     def complex(a):
         return (((a * 10 + 7).relu() * 6 + 5).relu() * 10).sigmoid().log() / 50
+
+    @staticmethod
+    def add_zip(a: Iterable[A], b: Iterable[A]) -> Iterable[A]:
+        """Element-wise addition of two iterables."""
+        return (x + y for x, y in zip(a, b))
+
+    @staticmethod
+    def sub_zip(a: Iterable[A], b: Iterable[A]) -> Iterable[A]:
+        """Element-wise subtraction of two iterables."""
+        return (x - y for x, y in zip(a, b))
+
+    @staticmethod
+    def mul_zip(a: Iterable[A], b: Iterable[A]) -> Iterable[A]:
+        """Element-wise multiplication of two iterables."""
+        return (x * y for x, y in zip(a, b))
+
+    @staticmethod
+    def div_zip(a: Iterable[A], b: Iterable[A]) -> Iterable[A]:
+        """Element-wise division of two iterables, handling division by zero."""
+        return (x / y if y != 0 else float("inf") for x, y in zip(a, b))

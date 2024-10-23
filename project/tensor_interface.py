@@ -2,262 +2,203 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 from project.interface.streamlit_utils import render_function
-from show_tensor import tensor_figure
+from project.show_tensor import tensor_figure
+from minitorch import (
+    Tensor,
+    index_to_position,
+    to_index,
+    TensorBackend,
+    TensorOps,  # Ensure you import the correct ops class
+)
+from typing import List, Tuple, Union, Any
 
-from minitorch import SimpleBackend, Tensor, index_to_position, operators, to_index
-from minitorch.tensor_data import TensorData
+
+def safe_int_conversion(value: Any) -> int:
+    """Safely convert a value to an integer, handling various types."""
+    if isinstance(value, (int, float)):
+        return int(value)
+    raise ValueError(f"Cannot convert {value} to int.")
 
 
-def st_select_index(tensor_shape, n_cols=3):
-    out_index = [0] * len(tensor_shape)
-    cols = st.columns(n_cols)
-    for idx, dim in enumerate(tensor_shape):
-        out_index[idx] = cols[idx % n_cols].number_input(
-            f"Dimension {idx} index:", value=0, min_value=0, max_value=dim - 1
+def get_tensor_shape_input(shape: Tuple[int, ...]) -> List[int]:
+    """Get index inputs for each dimension of the tensor shape."""
+    return [
+        safe_int_conversion(
+            st.number_input(
+                f"Dimension {i} index:", min_value=0, max_value=dim - 1, value=0
+            )
         )
-    return out_index
-
-
-def st_visualize_storage(tensor: Tensor, selected_position: int, max_size=10):
-    tensor_size = len(tensor._tensor._storage)
-    if tensor_size > max_size:
-        st.warning(f"Showing first {max_size} elements from the tensor storage.")
-    x = list(range(min(tensor_size, max_size)))
-    y = [0] * len(x)
-    data = [
-        go.Scatter(
-            hoverinfo="skip",
-            mode="markers+text",
-            x=x,
-            y=y,
-            marker=dict(
-                size=50,
-                symbol="square",
-                color=[
-                    "#69BAC9" if x_ == selected_position else "lightgray" for x_ in x
-                ],
-            ),
-            text=tensor._tensor._storage[:max_size],
-            textposition="middle center",
-            textfont_size=20,
-        )
+        for i, dim in enumerate(shape)
     ]
 
-    lr_margin = 25 if len(x) >= 9 else 75 if len(x) >= 6 else 175
 
-    layout = go.Layout(
-        title={"text": "Tensor Storage", "x": 0.5, "y": 1.0, "xanchor": "center"},
-        font={"family": "Raleway", "size": 20, "color": "black"},
-        xaxis={"showgrid": False, "showticklabels": False},
-        yaxis={"showgrid": False, "showticklabels": False},
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        autosize=True,
-        width=650,
-        height=125,
-        showlegend=False,
-        margin=dict(l=lr_margin, r=lr_margin, t=0, b=0),
+def display_tensor_storage(
+    tensor: Tensor, selected_index: int, max_size: int = 10
+) -> None:
+    """Visualize tensor storage with a Plotly scatter plot."""
+    storage = tensor._tensor._storage
+    display_data = storage[:max_size] if len(storage) > max_size else storage
+
+    fig = go.Figure(
+        data=[
+            go.Scatter(
+                x=list(range(len(display_data))),
+                y=[0] * len(display_data),
+                mode="markers+text",
+                text=display_data,
+                textposition="middle center",
+                marker=dict(
+                    size=50,
+                    color=[
+                        "#69BAC9" if i == selected_index else "lightgray"
+                        for i in range(len(display_data))
+                    ],
+                ),
+            )
+        ]
     )
 
-    fig = go.Figure(data=data, layout=layout)
+    fig.update_layout(
+        title="Tensor Storage Visualization",
+        xaxis=dict(showgrid=False, showticklabels=False),
+        yaxis=dict(showgrid=False, showticklabels=False),
+        height=125,
+        margin=dict(l=25, r=25, t=0, b=0),
+    )
+
     st.write(fig)
 
 
-def st_visualize_tensor(
-    tensor: Tensor, highlighted_index, strides=None, show_value=True
-):
-    depth = tensor.shape[0]
-    rows = tensor.shape[1] if len(tensor.shape) > 1 else 1
-    columns = tensor.shape[2] if len(tensor.shape) > 2 else 1
-
-    if strides is None:
-        strides = tensor._tensor.strides
-
+def visualize_tensor(tensor: Tensor, index: List[int]) -> None:
+    """Visualize the tensor value at a specific index."""
     if len(tensor.shape) != 3:
-        # TODO: Fix visualization instead of showing warning
-        st.error("Can only visualize a tensor which has 3 dimensions")
+        st.error("Only 3D tensors can be visualized.")
         return
 
-    position_in_storage = index_to_position(highlighted_index, strides)
+    position = index_to_position(
+        np.array(index, dtype=np.int32),
+        np.array(tensor._tensor.strides, dtype=np.int32),
+    )
+    value = tensor._tensor._storage[
+        safe_int_conversion(position)
+    ]  # Ensure position is an int
 
-    if position_in_storage >= 0 and show_value:
-        st.write(
-            f"**Value at position {position_in_storage}:** {tensor._tensor._storage[position_in_storage]}"
-        )
-
-    # Map index to highlight since tensor_figure doesn't know about strides
-    st.write("highlighted", highlighted_index)
-    if len(highlighted_index) > 2:
-        highlighted_position = highlighted_index[0]
-        highlighted_position += highlighted_index[1] * depth * columns
-        highlighted_position += highlighted_index[2] * depth
-    elif len(highlighted_index) > 1:
-        highlighted_position = highlighted_index[0]
-        highlighted_position += highlighted_index[1] * depth * columns
-    else:
-        highlighted_position = highlighted_index[0]
+    st.write(f"**Value at index {index}:** {value}")
 
     fig = tensor_figure(
-        depth,
-        columns,
-        rows,
-        highlighted_position,
-        f"Storage position: {position_in_storage}, Index: {highlighted_index}",
-        # Fix for weirndess in tensor_figure axis
-        axisTitles=["depth (i)", "columns (k)", "rows (j)"],
+        tensor.shape[0],
+        tensor.shape[2],
+        tensor.shape[1],
+        safe_int_conversion(position),
+        f"Storage Position: {position}, Index: {index}",
         show_fig=False,
-        slider=False,
-    )
-    fig.update_layout(
-        width=650,
-        height=500,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=50, r=50, t=0, b=0),
     )
     st.write(fig)
 
 
-def interface_visualize_tensor(tensor: Tensor, hide_function_defs: bool):
-    st.write(f"**Tensor strides:** {tensor._tensor.strides}")
-    selected_position = st.slider(
-        "Selected position in storage", 0, len(tensor._tensor._storage) - 1, value=0
-    )
-    out_index = [0] * len(tensor.shape)
-    to_index(selected_position, tensor.shape, out_index)
-    st.write(f"**Corresponding index:** {out_index}")
-    st_visualize_tensor(tensor, out_index, show_value=False)
-    st_visualize_storage(tensor, selected_position)
-
-
-def interface_index_to_position(tensor: Tensor, hide_function_defs: bool):
-    if not hide_function_defs:
-        with st.expander("Show function definition"):
-            render_function(index_to_position)
-    col1, col2 = st.columns(2)
-    idx = eval(
-        col1.text_input(
-            "Multi-dimensional index", value=str([0] * len(tensor._tensor.strides))
+def visualize_tensor_interface(tensor: Tensor) -> None:
+    """Main interface to visualize tensor and its storage."""
+    st.write(f"**Tensor Strides:** {tensor._tensor.strides}")
+    selected_index = safe_int_conversion(
+        st.slider(
+            "Select Storage Position", 0, len(tensor._tensor._storage) - 1, value=0
         )
     )
-    tensor_strides = eval(
-        col2.text_input("Tensor strides", value=str(tensor._tensor.strides))
-    )
-    st_visualize_tensor(tensor, idx, tensor_strides)
 
-
-def interface_to_index(tensor: Tensor, hide_function_defs: bool):
-    if not hide_function_defs:
-        with st.expander("Show function definition"):
-            render_function(to_index)
     tensor_shape = tensor.shape
-    st.write(f"**Tensor strides:** {tensor._tensor.strides}")
-    selected_position = st.number_input(
-        "Position in storage",
-        value=0,
-        min_value=0,
-        max_value=len(tensor._tensor._storage) - 1,
+    out_index = get_tensor_shape_input(tuple(tensor_shape))  # Ensure tuple is passed
+
+    visualize_tensor(tensor, out_index)
+    display_tensor_storage(tensor, selected_index)
+
+
+def interface_index_to_position(tensor: Tensor) -> None:
+    """Interface for the index_to_position function."""
+    index_input = st.text_input(
+        "Multi-dimensional index", value=str([0] * len(tensor.shape))
     )
-    out_index = [0] * len(tensor_shape)
-    to_index(selected_position, tensor_shape, out_index)
-    st.write(
-        f"**Value at position {selected_position}:** {tensor._tensor._storage[selected_position]}"
-    )
-    st.write("**Out index:**", out_index)
-
-    st_visualize_tensor(tensor, out_index, show_value=False)
-
-
-def interface_strides(tensor: Tensor, hide_function_defs: bool):
-    strides = eval(st.text_input("Tensor strides", value=str(tensor._tensor.strides)))
-
-    st.write("**Try it out:**")
-    out_index = st_select_index(tensor.shape)
-    cols = st.columns(len(strides))
-    for dim, stride in enumerate(strides):
-        cols[dim].write(f"*moves {stride} positions in storage*")
-    st_visualize_tensor(tensor, out_index, strides, show_value=True)
-
-
-def interface_permute(tensor: Tensor, hide_function_defs: bool):
-    if not hide_function_defs:
-        with st.expander("Show function definition"):
-            render_function(TensorData.permute)
-
-    st.write(f"**Tensor strides:** {tensor._tensor.strides}")
-    default_permutation = list(range(len(tensor.shape)))
-    default_permutation.reverse()
-    permutation = eval(st.text_input("Tensor permutation", value=default_permutation))
-    p_tensor = tensor.permute(*permutation)
-    p_tensor_strides = p_tensor._tensor.strides
-    st.write(f"**Permuted tensor strides:** {p_tensor_strides}")
-
-    st.write("**Try selecting a tensor value by index:**")
-    out_index = st_select_index(tensor.shape)
-    viz_type = st.selectbox(
-        "Choose tensor visualization", options=["Original tensor", "Permuted tensor"]
-    )
-    if viz_type == "Original tensor":
-        viz_tensor = tensor
-    else:
-        viz_tensor = p_tensor
-    st_visualize_tensor(viz_tensor, out_index, show_value=False)
-    st_visualize_storage(
-        tensor, index_to_position(out_index, viz_tensor._tensor.strides)
+    strides_input = st.text_input(
+        "Tensor Strides", value=str(list(tensor._tensor.strides))
     )
 
-
-def st_eval_error_message(expression: str, error_msg: str):
     try:
-        return eval(expression)
+        index = eval(index_input)
+        strides = eval(strides_input)
+
+        if isinstance(index, (list, tuple)) and len(index) == len(tensor.shape):
+            position = index_to_position(
+                np.array(index, dtype=np.int32), np.array(strides, dtype=np.int32)
+            )
+            st.write(f"**Position in Storage:** {position}")
+        else:
+            st.error("Invalid index format.")
     except Exception as e:
-        st.error(error_msg)
-        raise e
+        st.error(f"Error: {e}")
 
 
-def render_tensor_sandbox(hide_function_defs: bool):
-    st.write("## Sandbox for Tensors")
-    st.write("**Define your tensor**")
-    # Consistent random number generator
-    rng = np.random.RandomState(42)
-    # col1, col2 = st.columns(2)
-    tensor_shape = st_eval_error_message(
-        st.text_input("Tensor shape", value="(2, 2, 2)"),
-        "Tensor shape must be defined as an in-line tuple, i.e. (2, 2, 2)",
+def interface_to_index(tensor: Tensor) -> None:
+    """Interface for the to_index function."""
+    position = safe_int_conversion(
+        st.number_input("Storage Position", 0, len(tensor._tensor._storage) - 1)
     )
-    tensor_size = int(operators.prod(tensor_shape))
-    random_tensor = st.checkbox("Fill tensor with random numbers", value=True)
-    if random_tensor:
-        tensor_data = np.round(rng.rand(tensor_size), 2)
-        st.write("**Tensor data storage:**")
-        # Visualize horizontally
-        st.write(tensor_data.reshape(1, -1))
-    else:
-        tensor_data = st_eval_error_message(
-            st.text_input("Tensor data storage", value=str(list(range(tensor_size)))),
-            "Tensor data storage must be defined as an in-line list, i.e. [1, 2, 3, 4]",
+    out_index = np.zeros(len(tensor.shape), dtype=np.int32)
+    to_index(position, np.array(tensor.shape, dtype=np.int32), out_index)
+    st.write(f"**Index corresponding to position {position}:** {out_index.tolist()}")
+
+
+def interface_permute(tensor: Tensor) -> None:
+    """Interface for tensor permutation."""
+    permutation_input = st.text_input(
+        "Permutation", value=str(list(range(len(tensor.shape)))[::-1])
+    )
+    try:
+        permutation = eval(permutation_input)
+        permuted_tensor = tensor.permute(*permutation)
+        st.write(f"**Permuted Tensor Strides:** {permuted_tensor._tensor.strides}")
+    except Exception as e:
+        st.error(f"Error: {e}")
+
+
+def render_tensor_sandbox() -> None:
+    """Sandbox for creating and visualizing tensors."""
+    st.write("## Tensor Sandbox")
+    tensor_shape = eval(st.text_input("Tensor Shape", value="(2, 2, 2)"))
+
+    random_data = st.checkbox("Fill Tensor with Random Numbers", value=True)
+    tensor_data = np.round(
+        np.random.rand(*tensor_shape)
+        if random_data
+        else np.arange(np.prod(tensor_shape)),
+        2,
+    )
+
+    try:
+        # Create a TensorBackend instance with the necessary arguments
+        backend_instance = TensorBackend(
+            ops=TensorOps
+        )  # Ensure you use a valid ops class
+
+        tensor = Tensor.make(
+            tensor_data.tolist(), tensor_shape, backend=backend_instance
+        )  # Use the instance
+        st.write("**Tensor Created Successfully!**")
+
+        action = st.selectbox(
+            "Select Action",
+            ["Visualize Tensor", "Index to Position", "To Index", "Permute Tensor"],
         )
 
-    try:
-        test_tensor = Tensor.make(tensor_data, tensor_shape, backend=SimpleBackend)
-    except AssertionError as e:
-        storage_size = len(tensor_data)
-        if tensor_size != storage_size:
-            st.error(
-                f"Tensor data storage must define all values in shape ({tensor_size} != {storage_size    })"
-            )
-        else:
-            st.error(e)
-        return
+        if action == "Visualize Tensor":
+            visualize_tensor_interface(tensor)
+        elif action == "Index to Position":
+            interface_index_to_position(tensor)
+        elif action == "To Index":
+            interface_to_index(tensor)
+        elif action == "Permute Tensor":
+            interface_permute(tensor)
+    except Exception as e:
+        st.error(f"Failed to create tensor: {e}")
 
-    select_fn = {
-        "Visualize Tensor Definition": interface_visualize_tensor,
-        "Visualize Tensor Strides": interface_strides,
-        "function: index_to_position": interface_index_to_position,
-        "function: to_index": interface_to_index,
-        "function: TensorData.permute": interface_permute,
-    }
 
-    selected_fn = st.selectbox("Select an interface", options=list(select_fn.keys()))
-
-    select_fn[selected_fn](test_tensor, hide_function_defs)
+# Call the main function to run the sandbox
+render_tensor_sandbox()

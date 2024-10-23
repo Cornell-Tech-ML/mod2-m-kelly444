@@ -1,145 +1,125 @@
 from __future__ import annotations
-
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 
 class Module:
-    """Modules form a tree that store parameters and other
-    submodules. They make up the basis of neural network stacks.
-
-    Attributes
-    ----------
-        _modules : Storage of the child modules
-        _parameters : Storage of the module's parameters
-        training : Whether the module is in training mode or evaluation mode
-
-    """
-
-    _modules: Dict[str, Module]
-    _parameters: Dict[str, Parameter]
-    training: bool
+    """A Module is a building block for creating neural networks."""
 
     def __init__(self) -> None:
-        self._modules = {}
-        self._parameters = {}
-        self.training = True
+        """Initializes a new Module with empty child modules and parameters, set to training mode."""
+        self._modules: Dict[str, Module] = {}
+        self._parameters: Dict[str, Parameter] = {}
+        self.training: bool = True
 
     def modules(self) -> Sequence[Module]:
-        """Return the direct child modules of this module."""
-        m: Dict[str, Module] = self.__dict__["_modules"]
-        return list(m.values())
+        """Retrieve the immediate child modules of this module."""
+        return list(self._modules.values())
 
     def train(self) -> None:
-        """Set the mode of this module and all descendent modules to `train`."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        """Set this module and all its child modules to training mode."""
+        self.training = True
+        for module in self._modules.values():
+            module.train()
 
     def eval(self) -> None:
-        """Set the mode of this module and all descendent modules to `eval`."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        """Set this module and all its child modules to evaluation mode."""
+        self.training = False
+        for module in self._modules.values():
+            module.eval()
 
     def named_parameters(self) -> Sequence[Tuple[str, Parameter]]:
-        """Collect all the parameters of this module and its descendents.
-
-        Returns
-        -------
-            The name and `Parameter` of each ancestor parameter.
-
-        """
-        raise NotImplementedError("Need to include this file from past assignment.")
+        """Gather all parameters from this module and its child modules."""
+        params = [(name, param) for name, param in self._parameters.items()]
+        for name, module in self._modules.items():
+            params.extend(
+                (f"{name}.{child_name}", child_param)
+                for child_name, child_param in module.named_parameters()
+            )
+        return params
 
     def parameters(self) -> Sequence[Parameter]:
-        """Enumerate over all the parameters of this module and its descendents."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        """Collect all parameters from this module and its child modules."""
+        params = list(self._parameters.values())
+        for module in self._modules.values():
+            params.extend(module.parameters())
+        return params
 
     def add_parameter(self, k: str, v: Any) -> Parameter:
-        """Manually add a parameter. Useful helper for scalar parameters.
-
-        Args:
-        ----
-            k: Local name of the parameter.
-            v: Value for the parameter.
-
-        Returns:
-        -------
-            Newly created parameter.
-
-        """
+        """Manually add a new parameter to this module."""
         val = Parameter(v, k)
-        self.__dict__["_parameters"][k] = val
+        self._parameters[k] = val
         return val
 
-    def __setattr__(self, key: str, val: Parameter) -> None:
+    def __setattr__(self, key: str, val: Any) -> None:
+        """Custom setter for handling parameters and child modules."""
         if isinstance(val, Parameter):
-            self.__dict__["_parameters"][key] = val
+            self._parameters[key] = val
         elif isinstance(val, Module):
-            self.__dict__["_modules"][key] = val
+            self._modules[key] = val
         else:
             super().__setattr__(key, val)
 
     def __getattr__(self, key: str) -> Any:
-        if key in self.__dict__["_parameters"]:
-            return self.__dict__["_parameters"][key]
-
-        if key in self.__dict__["_modules"]:
-            return self.__dict__["_modules"][key]
+        """Custom getter for retrieving parameters and child modules."""
+        if key in self._parameters:
+            return self._parameters[key]
+        if key in self._modules:
+            return self._modules[key]
         return None
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Makes the module callable, running the `forward` method."""
         return self.forward(*args, **kwargs)
 
     def __repr__(self) -> str:
+        """String representation of the module and its child modules."""
+
         def _addindent(s_: str, numSpaces: int) -> str:
             s2 = s_.split("\n")
             if len(s2) == 1:
                 return s_
             first = s2.pop(0)
             s2 = [(numSpaces * " ") + line for line in s2]
-            s = "\n".join(s2)
-            s = first + "\n" + s
-            return s
+            return first + "\n" + "\n".join(s2)
 
-        child_lines = []
-
-        for key, module in self._modules.items():
-            mod_str = repr(module)
-            mod_str = _addindent(mod_str, 2)
-            child_lines.append("(" + key + "): " + mod_str)
-        lines = child_lines
-
-        main_str = self.__class__.__name__ + "("
-        if lines:
-            # simple one-liner info, which most builtin Modules will use
-            main_str += "\n  " + "\n  ".join(lines) + "\n"
-
-        main_str += ")"
+        child_lines = [
+            f"({key}): " + _addindent(repr(module), 2)
+            for key, module in self._modules.items()
+        ]
+        main_str = (
+            f"{self.__class__.__name__}(\n  " + "\n  ".join(child_lines) + "\n)"
+            if child_lines
+            else f"{self.__class__.__name__}()"
+        )
         return main_str
 
 
 class Parameter:
-    """A Parameter is a special container stored in a `Module`.
-
-    It is designed to hold a `Variable`, but we allow it to hold
-    any value for testing.
-    """
+    """A Parameter holds a value used in a Module."""
 
     def __init__(self, x: Any, name: Optional[str] = None) -> None:
-        self.value = x
+        """Initialize a new Parameter with a value and an optional name."""
+        self.value = x  # Store the value in a separate attribute
+        self.data = x  # Retain the original data attribute for backward compatibility
         self.name = name
         if hasattr(x, "requires_grad_"):
-            self.value.requires_grad_(True)
+            self.data.requires_grad_(True)
             if self.name:
-                self.value.name = self.name
+                self.data.name = self.name
 
     def update(self, x: Any) -> None:
-        """Update the parameter value."""
-        self.value = x
+        """Update the value of the parameter."""
+        self.value = x  # Update the value attribute
+        self.data = x  # Update the data attribute
         if hasattr(x, "requires_grad_"):
-            self.value.requires_grad_(True)
+            self.data.requires_grad_(True)
             if self.name:
-                self.value.name = self.name
+                self.data.name = self.name
 
     def __repr__(self) -> str:
-        return repr(self.value)
+        """Returns a string representation of the parameter's value."""
+        return repr(self.value)  # Return the value instead of data
 
     def __str__(self) -> str:
-        return str(self.value)
+        """Returns a human-readable string representation of the parameter's value."""
+        return str(self.value)  # Return the value instead of data
