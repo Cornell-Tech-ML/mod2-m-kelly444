@@ -18,4 +18,4 @@ The files that will be synced are:
 
         minitorch/operators.py minitorch/module.py minitorch/autodiff.py minitorch/scalar.py minitorch/scalar_functions.py minitorch/module.py project/run_manual.py project/run_scalar.py project/datasets.py
 
-<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/a6120c3399fe9aa9d56d8c624426555a82d9601c/Screen%20Shot%202024-10-23%20at%209.13.07%20AM.png" width="50%">
+<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/0419664f3870523dbb9546bd41d86d9112346743/Screen%20Shot%202024-10-23%20at%209.17.38%20AM.png" width="50%">
