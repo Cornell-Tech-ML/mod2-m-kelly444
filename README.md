@@ -22,13 +22,16 @@ Tensor Sandbox
 <img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/0419664f3870523dbb9546bd41d86d9112346743/Screen%20Shot%202024-10-23%20at%209.17.38%20AM.png" width="100%">
 
 Tensor Math Sandbox
-<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/3331d880b7f99611fb590f51e716e572e1029422/Screen%20Shot%202024-10-23%20at%209.17.25%20AM.png" width="100%">
+<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/3331d880b7f99611fb590f51e716e572e1029422/Screen%20Shot%202024-10-23%20at%209.17.25%20AM.png" width="75%">
 
 Autograd Sandbox
-<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/338268dfea2a1245fb83edacfc7bfd16578c9ec1/Screen%20Shot%202024-10-23%20at%209.16.12%20AM.png" width="100%">
+<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/338268dfea2a1245fb83edacfc7bfd16578c9ec1/Screen%20Shot%202024-10-23%20at%209.16.12%20AM.png" width="75%">
 
 Module 2 Tensor
-<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/fb58f9d90d4ac080283e7cd463ba18e3736688fa/Screen%20Shot%202024-10-23%20at%209.13.07%20AM.png" width="100%">
+<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/fb58f9d90d4ac080283e7cd463ba18e3736688fa/Screen%20Shot%202024-10-23%20at%209.13.07%20AM.png" width="75%">
 
 Training Simple Dataset
-<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/be8d8d4a390c3ddd4203802e872f291d4a1a7397/Screen%20Shot%202024-10-23%20at%209.32.46%20AM.png" width="100%">
+<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/be8d8d4a390c3ddd4203802e872f291d4a1a7397/Screen%20Shot%202024-10-23%20at%209.32.46%20AM.png" width="75%">
+
+Training Diag Dataset
+<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/704c450e0647fb8f0ea5fac6f41321ba565593c8/Screen%20Shot%202024-10-23%20at%209.34.58%20AM.png" width="75%">
