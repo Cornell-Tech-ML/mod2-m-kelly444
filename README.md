@@ -42,5 +42,5 @@ Module 2 Tensor: Training Diag Dataset
 
 <img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/704c450e0647fb8f0ea5fac6f41321ba565593c8/Screen%20Shot%202024-10-23%20at%209.34.58%20AM.png" width="75%">
 
-Module 2 Tensor: Training Split Dataset
-<img src="" width="75%">
+Module 2 Tensor: Training Xor Dataset
+<img src="https://github.com/Cornell-Tech-ML/mod2-m-kelly444/blob/e4e0162759c321d01e6fa65c4227e86b78ec163e/Screen%20Shot%202024-10-23%20at%209.40.47%20AM.png" width="75%">
