@@ -1,5 +1,4 @@
-from typing import List, Optional
-
+from typing import List, Optional, Tuple
 from hypothesis import settings
 from hypothesis.strategies import (
     DrawFn,
@@ -33,7 +32,7 @@ def vals(draw: DrawFn, size: int, number: SearchStrategy[float]) -> Tensor:
 
 
 @composite
-def shapes(draw: DrawFn) -> minitorch.UserShape:
+def shapes(draw: DrawFn) -> UserShape:
     lsize = draw(lists(small_ints, min_size=1, max_size=4))
     return tuple(lsize)
 
@@ -46,10 +45,10 @@ def tensor_data(
 ) -> TensorData:
     if shape is None:
         shape = draw(shapes())
-    size = int(minitorch.prod(shape))
+    size = int(minitorch.prod(list(shape)))  # Convert tuple to list
     data = draw(lists(numbers, min_size=size, max_size=size))
     permute: List[int] = draw(permutations(range(len(shape))))
-    permute_shape = tuple([shape[i] for i in permute])
+    permute_shape = tuple(shape[i] for i in permute)
     z = sorted(enumerate(permute), key=lambda a: a[1])
     reverse_permute = [a[0] for a in z]
     td = minitorch.TensorData(data, permute_shape)
@@ -89,7 +88,7 @@ def shaped_tensors(
     backend = minitorch.SimpleBackend if backend is None else backend
     td = draw(tensor_data(numbers))
     values = []
-    for i in range(n):
+    for _ in range(n):
         data = draw(lists(numbers, min_size=td.size, max_size=td.size))
         values.append(
             minitorch.Tensor(
@@ -108,11 +107,11 @@ def matmul_tensors(
 ) -> List[Tensor]:
     i, j, k = [draw(integers(min_value=1, max_value=10)) for _ in range(3)]
 
-    l1 = (i, j)
-    l2 = (j, k)
+    l1: Tuple[int, int] = (i, j)
+    l2: Tuple[int, int] = (j, k)
     values = []
     for shape in [l1, l2]:
-        size = int(minitorch.prod(shape))
+        size = int(minitorch.prod(list(shape)))  # Convert tuple to list
         data = draw(lists(numbers, min_size=size, max_size=size))
         values.append(minitorch.Tensor(minitorch.TensorData(data, shape)))
     return values

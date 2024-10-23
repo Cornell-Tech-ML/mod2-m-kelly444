@@ -43,6 +43,7 @@ def index_to_position(index: Index, strides: Strides) -> int:
     Returns:
     -------
         The position in the flat storage corresponding to the index.
+
     """
     return np.dot(index, strides)
 
@@ -55,6 +56,7 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         ordinal: The flat position number to convert.
         shape : The shape of the tensor.
         out_index : The output where the resulting index will be stored.
+
     """
     for i in range(len(shape) - 1, -1, -1):
         out_index[i] = ordinal % shape[i]
@@ -76,6 +78,7 @@ def broadcast_index(
     Returns:
     -------
         None
+
     """
     big_index_reverse = list(reversed(big_index))
     big_shape_reverse = list(reversed(big_shape))
@@ -120,6 +123,7 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
     Raises:
     ------
         IndexingError : If the shapes can't be combined.
+
     """
     shape1_reverse = list(reversed(shape1))
     shape2_reverse = list(reversed(shape2))
@@ -170,6 +174,7 @@ class TensorData:
             storage: The data to be stored in the tensor.
             shape : The shape of the tensor.
             strides : The step sizes to navigate through the tensor (optional).
+
         """
         if isinstance(storage, np.ndarray):
             self._storage = storage
@@ -187,13 +192,12 @@ class TensorData:
         self._shape = array(shape)
         self.strides = strides
         self.dims = len(strides)
-        self.size = int(prod(shape))
+        self.size = int(prod(list(shape)))  # Fix applied here
         self.shape = shape
         assert len(self._storage) == self.size
 
     def to_cuda_(self) -> None:  # pragma: no cover
         """Transfers the data to the GPU for faster processing."""
-
         if not numba.cuda.is_cuda_array(self._storage):
             self._storage = numba.cuda.to_device(self._storage)
 
@@ -203,6 +207,7 @@ class TensorData:
         Returns
         -------
             True if the layout is correct, otherwise False.
+
         """
         last = 1e9
         for stride in self._strides:
@@ -221,7 +226,7 @@ class TensorData:
 
         Args:
         ----
-            index: The index to convert. It can be a single integer for 1D tensors 
+            index: The index to convert. It can be a single integer for 1D tensors
                    or a tuple of integers for multi-dimensional tensors.
 
         Returns:
@@ -231,6 +236,7 @@ class TensorData:
         Raises:
         ------
             IndexingError: If the index is out of bounds or invalid.
+
         """
         if isinstance(index, int):
             aindex: Index = array([index])
@@ -285,6 +291,7 @@ class TensorData:
         Returns:
         -------
             A new TensorData with the same data but in a different order.
+
         """
         assert list(sorted(order)) == list(
             range(len(self.shape))

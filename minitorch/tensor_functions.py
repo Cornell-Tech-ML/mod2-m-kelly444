@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 def wrap_tuple(x: Any) -> tuple:  # type: ignore
     """Convert an input value into a tuple.
 
-    If the input is already a tuple, return it as is. 
+    If the input is already a tuple, return it as is.
     Otherwise, wrap it in a tuple.
     """
     if isinstance(x, tuple):
@@ -362,19 +362,10 @@ class MatMul(Function):
 
 # Helpers for constructing tensors
 def zeros(shape: UserShape, backend: TensorBackend = SimpleBackend) -> Tensor:
-    """Create a tensor filled with zeros of the specified shape.
-
-    Args:
-    ----
-        shape : The shape of the tensor to create.
-        backend : The backend to use for the tensor.
-
-    Returns:
-    -------
-        A new tensor filled with zeros.
-    """
+    """Create a tensor filled with zeros of the specified shape."""
+    shape_list = [float(x) for x in shape]
     return minitorch.Tensor.make(
-        [0.0] * int(operators.prod(shape)), shape, backend=backend
+        [0.0] * int(operators.prod(shape_list)), shape, backend=backend
     )
 
 
@@ -383,19 +374,9 @@ def rand(
     backend: TensorBackend = SimpleBackend,
     requires_grad: bool = False,
 ) -> Tensor:
-    """Create a tensor with random values of the specified shape.
-
-    Args:
-    ----
-        shape : The shape of the tensor to create.
-        backend : The backend to use for the tensor.
-        requires_grad : Whether to enable gradient tracking for this tensor.
-
-    Returns:
-    -------
-        A new tensor filled with random values.
-    """
-    vals = [random.random() for _ in range(int(operators.prod(shape)))]
+    """Create a tensor with random values of the specified shape."""
+    shape_list = [float(x) for x in shape]
+    vals = [random.random() for _ in range(int(operators.prod(shape_list)))]
     tensor = minitorch.Tensor.make(vals, shape, backend=backend)
     tensor.requires_grad_(requires_grad)
     return tensor
@@ -419,6 +400,7 @@ def _tensor(
     Returns:
     -------
         A new tensor with the specified data and shape.
+
     """
     tensor = minitorch.Tensor.make(ls, shape, backend=backend)
     tensor.requires_grad_(requires_grad)
@@ -439,7 +421,9 @@ def tensor(
     Returns:
     -------
         A new tensor with the specified data.
+
     """
+
     def shape(ls: Any) -> List[int]:
         if isinstance(ls, (list, tuple)):
             return [len(ls)] + shape(ls[0])
@@ -474,6 +458,7 @@ def grad_central_difference(
     Returns:
     -------
         An approximation of the derivative of the function at the specified input tensor.
+
     """
     x = vals[arg]
     up = zeros(x.shape)
@@ -492,6 +477,7 @@ def grad_check(f: Any, *vals: Tensor) -> None:
     ----
         f : The function whose gradients are being checked.
         *vals : Input tensors to the function.
+
     """
     for x in vals:
         x.requires_grad_(True)

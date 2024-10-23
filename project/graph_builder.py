@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import minitorch
 from typing import Any, Dict, Union
 
+# Check if minitorch has the Scalar class
 if hasattr(minitorch, "Scalar"):
     Scalar = minitorch.Scalar  # type: ignore
 else:
@@ -61,7 +62,6 @@ class GraphBuilder:
 
     def run(self, final: Union[Scalar, minitorch.Tensor]) -> nx.MultiDiGraph:
         queue: list[list[Union[Scalar, minitorch.Tensor]]] = [[final]]
-
         G: nx.MultiDiGraph = nx.MultiDiGraph()
         G.add_node(self.get_name(final))
 
@@ -69,20 +69,29 @@ class GraphBuilder:
             (cur,) = queue[0]
             queue = queue[1:]
 
-            if cur.is_constant() or cur.is_leaf():
-                continue
-            else:
-                op: str = "%s (Op %d)" % (cur.history.last_fn.__name__, self.op_id)
+            # Check if cur is a minitorch.Tensor
+            if isinstance(cur, minitorch.Tensor):
+                if cur.is_constant() or cur.is_leaf():
+                    continue
+
+                # Ensure cur has the history attribute
+                if not hasattr(cur, "history") or cur.history is None:
+                    continue
+
+                op_name = (
+                    cur.history.last_fn.__name__
+                    if cur.history.last_fn is not None
+                    else "unknown_op"
+                )
+                op: str = f"{op_name} (Op {self.op_id})"
                 G.add_node(op, shape="square", penwidth=3)
                 G.add_edge(op, self.get_name(cur))
                 self.op_id += 1
-                for i, input in enumerate(cur.history.inputs):
-                    G.add_edge(self.get_name(input), op, f"{i}")
 
-                for input in cur.history.inputs:
-                    if not isinstance(input, Scalar) and not isinstance(
-                        input, minitorch.Tensor
-                    ):
-                        continue
-                    queue.append([input])
+                # Ensure inputs is a valid attribute of history
+                if hasattr(cur.history, "inputs"):
+                    for i, input in enumerate(cur.history.inputs):
+                        G.add_edge(self.get_name(input), op, f"{i}")
+                        queue.append([input])  # Append inputs for further processing
+
         return G

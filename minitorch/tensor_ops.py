@@ -15,7 +15,7 @@ from .tensor_data import (
 
 if TYPE_CHECKING:
     from .tensor import Tensor
-    from .tensor_data import Index, Shape, Storage, Strides
+    from .tensor_data import Shape, Storage, Strides
 
 
 class MapProto(Protocol):
@@ -36,7 +36,9 @@ class TensorOps:
         ...
 
     @staticmethod
-    def reduce(fn: Callable[[float, float], float], start: float = 0.0) -> Callable[[Tensor, int], Tensor]:
+    def reduce(
+        fn: Callable[[float, float], float], start: float = 0.0
+    ) -> Callable[[Tensor, int], Tensor]:
         """Make a function that reduces the tensor along a certain dimension using a specified operation."""
         ...
 
@@ -53,7 +55,9 @@ class TensorBackend:
         """Set up the tensor backend with the provided operations.
 
         Args:
+        ----
             ops : A class that defines operations for tensors (like map, zip, and reduce).
+
         """
         # Functions to apply to tensor elements
         self.neg_map = ops.map(operators.neg)
@@ -87,10 +91,13 @@ class SimpleOps(TensorOps):
         """Create a function that applies `fn` to each element of a tensor.
 
         Args:
+        ----
             fn: A function that takes a number and returns a number.
-        
+
         Returns:
+        -------
             A function that applies `fn` over a tensor and can write results to an output tensor.
+
         """
         f = tensor_map(fn)
 
@@ -103,19 +110,26 @@ class SimpleOps(TensorOps):
         return ret
 
     @staticmethod
-    def zip(fn: Callable[[float, float], float]) -> Callable[["Tensor", "Tensor"], "Tensor"]:
+    def zip(
+        fn: Callable[[float, float], float],
+    ) -> Callable[["Tensor", "Tensor"], "Tensor"]:
         """Create a function that applies `fn` to matching elements of two tensors.
 
         Args:
+        ----
             fn: A function that takes two numbers and returns a number.
-        
+
         Returns:
+        -------
             A function that combines elements from two tensors using `fn`.
+
         """
         f = tensor_zip(fn)
 
         def ret(a: "Tensor", b: "Tensor") -> "Tensor":
-            c_shape = shape_broadcast(a.shape, b.shape) if a.shape != b.shape else a.shape
+            c_shape = (
+                shape_broadcast(a.shape, b.shape) if a.shape != b.shape else a.shape
+            )
             out = a.zeros(c_shape)  # Create output tensor with the correct shape
             f(*out.tuple(), *a.tuple(), *b.tuple())
             return out
@@ -123,15 +137,20 @@ class SimpleOps(TensorOps):
         return ret
 
     @staticmethod
-    def reduce(fn: Callable[[float, float], float], start: float = 0.0) -> Callable[["Tensor", int], "Tensor"]:
+    def reduce(
+        fn: Callable[[float, float], float], start: float = 0.0
+    ) -> Callable[["Tensor", int], "Tensor"]:
         """Create a function that reduces a tensor's values along a specific dimension.
 
         Args:
+        ----
             fn: A function that combines two numbers and returns one number.
             start: The initial value for the reduction.
-        
+
         Returns:
+        -------
             A function that reduces a tensor along the specified dimension.
+
         """
         f = tensor_reduce(fn)
 
@@ -139,7 +158,9 @@ class SimpleOps(TensorOps):
             out_shape = list(a.shape)
             out_shape[dim] = 1  # Set the size of the specified dimension to 1
             out = a.zeros(tuple(out_shape))
-            out._tensor._storage[:] = start  # Initialize the output with the starting value
+            out._tensor._storage[:] = (
+                start  # Initialize the output with the starting value
+            )
             f(*out.tuple(), *a.tuple(), dim)
             return out
 
@@ -153,16 +174,29 @@ class SimpleOps(TensorOps):
     is_cuda = False
 
 
-def tensor_map(fn: Callable[[float], float]) -> Callable[[Storage, Shape, Strides, Storage, Shape, Strides], None]:
+def tensor_map(
+    fn: Callable[[float], float],
+) -> Callable[[Storage, Shape, Strides, Storage, Shape, Strides], None]:
     """Low-level function to apply a function to each element of a tensor.
 
     Args:
+    ----
         fn: A function that takes a number and returns a number.
-    
+
     Returns:
+    -------
         A function that applies `fn` to tensor data.
+
     """
-    def _map(out: Storage, out_shape: Shape, out_strides: Strides, in_storage: Storage, in_shape: Shape, in_strides: Strides) -> None:
+
+    def _map(
+        out: Storage,
+        out_shape: Shape,
+        out_strides: Strides,
+        in_storage: Storage,
+        in_shape: Shape,
+        in_strides: Strides,
+    ) -> None:
         out_index = np.zeros(len(out_shape), dtype=np.int32)
         in_index = np.zeros(len(in_shape), dtype=np.int32)
 
@@ -172,7 +206,7 @@ def tensor_map(fn: Callable[[float], float]) -> Callable[[Storage, Shape, Stride
                 broadcast_index(out_index, out_shape, in_shape, in_index)
             except IndexingError:
                 return
-            
+
             in_pos = index_to_position(in_index, in_strides)
             out_pos = index_to_position(out_index, out_strides)
             out[out_pos] = fn(in_storage[in_pos])
@@ -180,16 +214,34 @@ def tensor_map(fn: Callable[[float], float]) -> Callable[[Storage, Shape, Stride
     return _map
 
 
-def tensor_zip(fn: Callable[[float, float], float]) -> Callable[[Storage, Shape, Strides, Storage, Shape, Strides, Storage, Shape, Strides], None]:
+def tensor_zip(
+    fn: Callable[[float, float], float],
+) -> Callable[
+    [Storage, Shape, Strides, Storage, Shape, Strides, Storage, Shape, Strides], None
+]:
     """Low-level function to combine elements from two tensors.
 
     Args:
+    ----
         fn: A function that takes two numbers and returns a number.
-    
+
     Returns:
+    -------
         A function that combines tensor data.
+
     """
-    def _zip(out: Storage, out_shape: Shape, out_strides: Strides, a_storage: Storage, a_shape: Shape, a_strides: Strides, b_storage: Storage, b_shape: Shape, b_strides: Strides) -> None:
+
+    def _zip(
+        out: Storage,
+        out_shape: Shape,
+        out_strides: Strides,
+        a_storage: Storage,
+        a_shape: Shape,
+        a_strides: Strides,
+        b_storage: Storage,
+        b_shape: Shape,
+        b_strides: Strides,
+    ) -> None:
         out_index = np.zeros(len(out_shape), dtype=np.int32)
         a_index = np.zeros(len(a_shape), dtype=np.int32)
         b_index = np.zeros(len(b_shape), dtype=np.int32)
@@ -201,7 +253,7 @@ def tensor_zip(fn: Callable[[float, float], float]) -> Callable[[Storage, Shape,
                 broadcast_index(out_index, out_shape, b_shape, b_index)
             except IndexingError:
                 return
-            
+
             a_pos = index_to_position(a_index, a_strides)
             b_pos = index_to_position(b_index, b_strides)
             out_pos = index_to_position(out_index, out_strides)
@@ -210,16 +262,30 @@ def tensor_zip(fn: Callable[[float, float], float]) -> Callable[[Storage, Shape,
     return _zip
 
 
-def tensor_reduce(fn: Callable[[float, float], float]) -> Callable[[Storage, Shape, Strides, Storage, Shape, Strides, int], None]:
+def tensor_reduce(
+    fn: Callable[[float, float], float],
+) -> Callable[[Storage, Shape, Strides, Storage, Shape, Strides, int], None]:
     """Low-level function to combine values of a tensor along a specific dimension.
 
     Args:
+    ----
         fn: A function that combines two numbers into one.
-    
+
     Returns:
+    -------
         A function that reduces tensor data.
+
     """
-    def _reduce(out: Storage, out_shape: Shape, out_strides: Strides, a_storage: Storage, a_shape: Shape, a_strides: Strides, reduce_dim: int) -> None:
+
+    def _reduce(
+        out: Storage,
+        out_shape: Shape,
+        out_strides: Strides,
+        a_storage: Storage,
+        a_shape: Shape,
+        a_strides: Strides,
+        reduce_dim: int,
+    ) -> None:
         out_index = np.zeros(len(out_shape), dtype=np.int32)
         a_index = np.zeros(len(a_shape), dtype=np.int32)
 

@@ -2,10 +2,17 @@ import minitorch
 from typing import Callable, List, Any
 
 
-# Use this function to make a random parameter in
-# your module.
+class Linear:
+    def __init__(self, in_features: int, out_features: int):
+        self.weights = minitorch.rand((in_features, out_features))
+        self.bias = minitorch.rand((out_features,))
+
+    def __call__(self, x: Any) -> Any:
+        return x @ self.weights + self.bias
+
+
 def RParam(*shape: int) -> minitorch.Parameter:
-    r = 2 * (minitorch.rand(shape) - 0.5)
+    r = minitorch.tensor(2.0) * (minitorch.rand(shape) - minitorch.tensor(0.5))
     return minitorch.Parameter(r)
 
 
@@ -20,14 +27,16 @@ class Network:
         self.layers = []
         input_size = 2  # Adjust according to your input size
         for _ in range(hidden_layers):
-            self.layers.append(minitorch.Linear(input_size, input_size))
-            # Adjust input size if you want different sizes for layers
-        self.layers.append(minitorch.Linear(input_size, 1))  # Output layer
+            self.layers.append(Linear(input_size, input_size))
+        self.layers.append(Linear(input_size, 1))
 
     def forward(self, x: Any) -> Any:
         for layer in self.layers:
             x = layer(x).relu()
         return x
+
+    def parameters(self):
+        return [param for layer in self.layers for param in layer.parameters()]
 
 
 class TensorTrain:
@@ -64,7 +73,9 @@ class TensorTrain:
 
             # Forward
             out = self.model.forward(X).view(data.N)
-            prob = (out * y) + (out - 1.0) * (y - 1.0)
+            prob = (out * y) + (out - minitorch.tensor(1.0)) * (
+                y - minitorch.tensor(1.0)
+            )
 
             loss = -prob.log()
             (loss / data.N).sum().view(1).backward()

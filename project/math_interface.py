@@ -61,37 +61,43 @@ def render_math_sandbox(use_scalar: bool = False, use_tensor: bool = False) -> N
             st.write("Derivative f'(x)")
             if use_tensor:
                 x_var: List[Tensor] = [
-                    Tensor.make(
-                        [x], (1,), requires_grad=True, backend=minitorch.Tensor.backend
-                    )
-                    for x in xs
+                    Tensor.make([x], (1,), backend=minitorch.Tensor.backend) for x in xs
                 ]
             else:
-                x_var = [minitorch.Scalar(x) for x in xs]
+                x_var: List[Tensor] = [
+                    Tensor.make([float(x)], (1,), backend=minitorch.Tensor.backend)
+                    for x in xs
+                ]
 
+            out = None  # Initialize out
             for x in x_var:
                 out = scalar(x)
-                if use_tensor:
-                    out.backward(
-                        Tensor.make([1.0], (1,), backend=minitorch.Tensor.backend)
-                    )
-                else:
-                    out.backward()
+                if out is not None:
+                    if use_tensor:
+                        out.backward(
+                            Tensor.make([1.0], (1,), backend=minitorch.Tensor.backend)
+                        )
+                    else:
+                        out.backward()
 
             if use_tensor:
                 scatter = go.Scatter(
-                    mode="lines", x=xs, y=[x.grad.item() for x in x_var]
+                    mode="lines",
+                    x=xs,
+                    y=[x.grad.item() if x.grad else 0.0 for x in x_var],
                 )
             else:
                 scatter = go.Scatter(
-                    mode="lines", x=xs, y=[x.derivative for x in x_var]
+                    mode="lines", x=xs, y=[getattr(x, "derivative", 0.0) for x in x_var]
                 )
 
             fig = go.Figure(scatter)
             st.write(fig)
-            G = graph_builder.GraphBuilder().run(out)
-            G.graph["graph"] = {"rankdir": "LR"}
-            st.graphviz_chart(nx.nx_pydot.to_pydot(G).to_string())
+
+            if out is not None:
+                G = graph_builder.GraphBuilder().run(out)
+                G.graph["graph"] = {"rankdir": "LR"}
+                st.graphviz_chart(nx.nx_pydot.to_pydot(G).to_string())
 
     if f_type == "Two Arg":
         st.write("### " + name)
@@ -138,29 +144,31 @@ def render_math_sandbox(use_scalar: bool = False, use_tensor: bool = False) -> N
                         x1 = Tensor.make(
                             [x],
                             (1,),
-                            requires_grad=True,
                             backend=minitorch.Tensor.backend,
                         )
                         y1 = Tensor.make(
                             [y],
                             (1,),
-                            requires_grad=True,
                             backend=minitorch.Tensor.backend,
                         )
                         out = scalar(x1, y1)
-                        out.backward(
-                            Tensor.make([1.0], (1,), backend=minitorch.Tensor.backend)
-                        )
-                        oa.append((x, y, x1.grad.item()))
-                        ob.append((x, y, y1.grad.item()))
+                        if out is not None:
+                            out.backward(
+                                Tensor.make(
+                                    [1.0], (1,), backend=minitorch.Tensor.backend
+                                )
+                            )
+                            oa.append((x, y, x1.grad.item() if x1.grad else 0.0))
+                            ob.append((x, y, y1.grad.item() if y1.grad else 0.0))
                 else:
                     for y in ys:
                         x1 = minitorch.Scalar(x)
                         y1 = minitorch.Scalar(y)
                         out = scalar(x1, y1)
-                        out.backward()
-                        oa.append((x, y, x1.derivative))
-                        ob.append((x, y, y1.derivative))
+                        if out is not None:
+                            out.backward()
+                            oa.append((x, y, getattr(x1, "derivative", 0.0)))
+                            ob.append((x, y, getattr(y1, "derivative", 0.0)))
 
                 a.append(oa)
                 b.append(ob)

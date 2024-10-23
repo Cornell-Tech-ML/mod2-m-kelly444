@@ -5,28 +5,32 @@ from typing import Any, Callable, Iterable, List, Tuple, Protocol
 # ## Task 1.1
 # Central Difference Calculation
 
+
 def central_difference(
-    f: Callable[..., Any], 
-    *vals: float, 
-    arg: int = 0, 
-    epsilon: float = 1e-6
+    f: Callable[..., Any], *vals: float, arg: int = 0, epsilon: float = 1e-6
 ) -> float:
     """Estimate how much a function changes when you change one of its inputs slightly.
 
     Args:
+    ----
         f: A function that takes some numbers and gives one output.
         *vals: The numbers you want to plug into the function.
         arg: Which number to slightly change (by default, the first one).
         epsilon: How much to change that number (a small value).
 
     Returns:
+    -------
         The estimated change in the function's output based on the change in the specified input.
 
     Raises:
+    ------
         IndexError: If you try to change a number that doesn’t exist in the list of inputs.
+
     """
     if arg < 0 or arg >= len(vals):
-        raise IndexError(f"Argument index {arg} is out of bounds for {len(vals)} values.")
+        raise IndexError(
+            f"Argument index {arg} is out of bounds for {len(vals)} values."
+        )
 
     # Create new values by slightly changing the specified input
     positive_vals = list(vals)
@@ -40,11 +44,16 @@ def central_difference(
     print(
         "Central difference result:",
         derivative,
-        "Positive vals:", positive_vals,
-        "Negative vals:", negative_vals,
-        "Original vals:", vals,
-        "Epsilon:", epsilon,
-        "Function:", f,
+        "Positive vals:",
+        positive_vals,
+        "Negative vals:",
+        negative_vals,
+        "Original vals:",
+        vals,
+        "Epsilon:",
+        epsilon,
+        "Function:",
+        f,
     )
     return derivative
 
@@ -56,7 +65,9 @@ class Variable(Protocol):
         """Add a value to the total change for this variable.
 
         Args:
+        ----
             x: The change to add.
+
         """
         ...
 
@@ -87,9 +98,11 @@ def visit(variable: Variable, visited: set[int], topo_list: List[Variable]) -> N
     """Explore a variable and its dependencies to create a list in a specific order.
 
     Args:
+    ----
         variable: The current variable we are looking at.
         visited: A set of variables we've already checked.
         topo_list: A list that will hold the order of variables.
+
     """
     if variable.unique_id in visited:
         return
@@ -106,10 +119,13 @@ def topological_sort(variable: Variable) -> List[Variable]:
     """Create an ordered list of variables based on their dependencies.
 
     Args:
+    ----
         variable: The output variable from which we start.
 
     Returns:
+    -------
         A list of variables ordered by their dependencies, from output to inputs.
+
     """
     visited = set()
     topo_list = []
@@ -121,8 +137,10 @@ def backpropagate(variable: Variable, deriv: float) -> None:
     """Calculate how changes in the output variable affect all input variables.
 
     Args:
+    ----
         variable: The output variable we start from.
         deriv: The initial change to propagate backward.
+
     """
     topo_list = topological_sort(variable)
     derivatives = {topo_list[-1].unique_id: deriv}
@@ -140,7 +158,9 @@ def backpropagate(variable: Variable, deriv: float) -> None:
 
         chain_rule_outputs = var.chain_rule(derivatives[var.unique_id])
         for parent, output in chain_rule_outputs:
-            derivatives[parent.unique_id] = derivatives.get(parent.unique_id, 0.0) + output
+            derivatives[parent.unique_id] = (
+                derivatives.get(parent.unique_id, 0.0) + output
+            )
 
 
 @dataclass

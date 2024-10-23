@@ -5,6 +5,7 @@ from minitorch.tensor_visualization import st_visualize_tensor, st_visualize_sto
 
 from typing import Sequence  # Use Sequence instead of List
 
+
 def index_to_position(index: int, strides: Sequence[int]) -> int:
     """Convert a given index into a storage position based on tensor strides."""
     position = 0
@@ -12,6 +13,7 @@ def index_to_position(index: int, strides: Sequence[int]) -> int:
         position += index * strides[i]
         index = 0  # Only the first index matters for this calculation
     return position
+
 
 def show_tensor(tensor: Tensor) -> None:
     """Visualize a tensor in Streamlit."""

@@ -3,9 +3,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 import numpy as np
+import numpy.typing as npt
 
 from . import operators
 from .autodiff import Context, Variable, backpropagate
@@ -33,23 +45,24 @@ from .tensor_functions import (
 )
 
 if TYPE_CHECKING:
-    from typing import Any, Iterable, List, Optional, Sequence, Tuple, Type, Union
-    import numpy.typing as npt
     from .tensor_data import Shape, Storage, Strides, UserIndex, UserShape, UserStrides
     from .tensor_functions import Function
     from .tensor_ops import TensorBackend
 
     TensorLike = Union[float, int, "Tensor"]
 
+
 @dataclass
 class History:
     """Keeps track of how this variable was created through operations."""
-    
+
     last_fn: Optional[Type[Function]] = None
     ctx: Optional[Context] = None
     inputs: Sequence[Tensor] = ()
 
+
 _tensor_count = 0
+
 
 class Tensor:
     """Represents a variable that can hold multi-dimensional data (like arrays)."""
@@ -82,11 +95,7 @@ class Tensor:
         self.f = backend
 
     def requires_grad_(self, x: bool) -> None:
-        """Set if the tensor should track gradients.
-
-        Args:
-            x (bool): True if gradients should be tracked.
-        """
+        """Set if the tensor should track gradients."""
         self.history = History()
 
     def requires_grad(self) -> bool:
@@ -145,19 +154,10 @@ class Tensor:
         return Tensor(TensorData(storage, shape, strides), backend=backend)
 
     def expand(self, other: Tensor) -> Tensor:
-        """Adjust the tensor size for calculations with another tensor.
-
-        Args:
-            other: The tensor to adjust (must match or be compatible with self).
-
-        Returns:
-            The adjusted version of `other`.
-        """
-        # Case 1: Shapes match.
+        """Adjust the tensor size for calculations with another tensor."""
         if self.shape == other.shape:
             return other
 
-        # Case 2: Adjust `other` to fit this tensor's shape.
         true_shape = TensorData.shape_broadcast(self.shape, other.shape)
         buf = self.zeros(true_shape)
         self.backend.id_map(other, buf)
@@ -165,7 +165,6 @@ class Tensor:
         if self.shape == true_shape:
             return buf
 
-        # Case 3: Adjust for different shapes.
         out = buf
         orig_shape = [1] * (len(out.shape) - len(self.shape)) + list(self.shape)
 
@@ -177,24 +176,26 @@ class Tensor:
         return Tensor.make(out._tensor._storage, self.shape, backend=self.backend)
 
     def zeros(self, shape: Optional[UserShape] = None) -> Tensor:
-        """Create a new tensor filled with zeros.
+        """Create a new tensor filled with zeros."""
 
-        Args:
-            shape: The shape for the zero tensor.
-
-        Returns:
-            A zero-filled tensor.
-        """
         def zero(shape: UserShape) -> Tensor:
+            # Convert shape to list of floats for operators.prod
+            shape_list = [float(x) for x in shape]
             return Tensor.make(
-                [0.0] * int(operators.prod(shape)), shape, backend=self.backend
+                [0.0] * int(operators.prod(shape_list)), shape, backend=self.backend
             )
 
         return zero(shape) if shape else zero(self.shape)
 
     def zero_grad_(self) -> None:
         """Reset the current gradient to zero."""
-        self.grad = self.zeros()
+        # Convert shape to list of floats for operators.prod
+        shape_list = [float(x) for x in self.shape]
+        self.grad = Tensor.make(
+            [0.0] * int(operators.prod(shape_list)),
+            self.shape,
+            backend=self.backend,
+        )
 
     def tuple(self) -> Tuple[Storage, Shape, Strides]:
         """Get the tensor's data info as a tuple."""
@@ -204,17 +205,13 @@ class Tensor:
         """Separate the tensor from the computation history."""
         return Tensor(self._tensor, backend=self.backend)
 
-    # Methods for gradient calculations
     def accumulate_derivative(self, x: Any) -> None:
-        """Add the gradient to this variable. Only for top-level variables.
-
-        Args:
-            x: The gradient value to add.
-        """
+        """Add the gradient to this variable. Only for top-level variables."""
         assert self.is_leaf(), "Only top-level variables can have gradients."
         if self.grad is None:
+            shape_list = [float(x) for x in self.shape]
             self.grad = Tensor.make(
-                [0.0] * int(operators.prod(self.shape)),
+                [0.0] * int(operators.prod(shape_list)),
                 self.shape,
                 backend=self.backend,
             )
@@ -235,14 +232,7 @@ class Tensor:
         return self.history.inputs
 
     def chain_rule(self, d_output: Any) -> Iterable[Tuple[Variable, Any]]:
-        """Calculate gradients for inputs based on output gradients.
-
-        Args:
-            d_output: The output gradient for backward calculation.
-
-        Returns:
-            Pairs of (input variable, gradient).
-        """
+        """Calculate gradients for inputs based on output gradients."""
         h = self.history
         assert h is not None and h.last_fn is not None and h.ctx is not None
 
@@ -254,15 +244,15 @@ class Tensor:
         ]
 
     def backward(self, grad_output: Optional[Tensor] = None) -> None:
-        """Run the backward pass for this Tensor.
-
-        Args:
-            grad_output: Optional gradient output for non-scalar Tensors.
-        """
+        """Run the backward pass for this Tensor."""
         if grad_output is None:
             assert self.shape == (1,), "Provide grad_output if not a single value."
             grad_output = Tensor.make([1.0], (1,), backend=self.backend)
-        backpropagate(self, grad_output)
+
+        # At this point grad_output is definitely a Tensor (not None)
+        grad_output = cast(Tensor, grad_output)
+        deriv = grad_output.item()  # Convert to float
+        backpropagate(self, deriv)
 
     # Operator overloads
     def __truediv__(self, b: TensorLike) -> Tensor:
@@ -329,14 +319,7 @@ class Tensor:
         return IsClose.apply(self, self._ensure_tensor(b))
 
     def sum(self, dim: Optional[Tensor | int] = None) -> Tensor:
-        """Calculate the sum of elements in the Tensor along a dimension.
-
-        Args:
-            dim: The dimension to sum over. If None, sum all elements.
-
-        Returns:
-            A Tensor with the sum.
-        """
+        """Calculate the sum of elements in the Tensor along a dimension."""
         if dim is None:
             one_d_tensor = self.contiguous().view(self._ensure_tensor(-1))
             return Sum.apply(one_d_tensor, Tensor.make([0], (1,), backend=self.backend))
@@ -358,7 +341,9 @@ class Tensor:
 
     def permute(self, *order: int, dim: Optional[Tensor] = None) -> Tensor:
         """Change the order of the tensor's dimensions."""
-        return Permute.apply(self, Tensor.make(list(order), (len(order),), backend=self.backend))
+        return Permute.apply(
+            self, Tensor.make(list(order), (len(order),), backend=self.backend)
+        )
 
     def view(self, *shape: TensorLike, dim: Optional[Tensor] = None) -> Tensor:
         """Get a new Tensor with a different shape."""
